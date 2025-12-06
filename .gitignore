@@ -1,0 +1,16 @@
+# Python系
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# データセット 
+data/
+*.zip
+
+# 学習済み重み 
+weights/
+*.pth
+
+# 環境設定
+.env
+.venv/
