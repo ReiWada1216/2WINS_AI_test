@@ -1,0 +1,66 @@
+Preparing data loaders...
+Initializing model...
+2025-12-06 17:25:30,869 - INFO - Start training for 20 epochs on mps...
+Epoch 1 [Train]:   0%|                                                                  | 0/17 [00:00<?, ?it/s]/Users/wadarei/2WINS_AI_test/.venv/lib/python3.13/site-packages/torch/utils/data/dataloader.py:692: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, device pinned memory won't be used.
+  warnings.warn(warn_msg)
+2025-12-06 17:26:43,145 - INFO - Epoch 1/20 | Train Loss: 1.0002 | Val Loss: 1.2045 | Recall: 1.0000 | Precision: 0.2724 | F1: 0.4281 | Time: 72.27s
+2025-12-06 17:26:43,149 - INFO - Recall Improved (0.0000 -> 1.0000). Saving model...
+Epoch 2 [Train]:   0%|                                                                  | 0/17 [00:00<?, ?it/s]/Users/wadarei/2WINS_AI_test/.venv/lib/python3.13/site-packages/torch/utils/data/dataloader.py:692: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, device pinned memory won't be used.
+  warnings.warn(warn_msg)
+2025-12-06 17:27:53,814 - INFO - Epoch 2/20 | Train Loss: 0.7108 | Val Loss: 0.6983 | Recall: 0.0000 | Precision: 0.0000 | F1: 0.0000 | Time: 70.44s
+Epoch 3 [Train]:   0%|                                                                  | 0/17 [00:00<?, ?it/s]/Users/wadarei/2WINS_AI_test/.venv/lib/python3.13/site-packages/torch/utils/data/dataloader.py:692: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, device pinned memory won't be used.
+  warnings.warn(warn_msg)
+2025-12-06 17:29:04,675 - INFO - Epoch 3/20 | Train Loss: 0.6962 | Val Loss: 0.6951 | Recall: 1.0000 | Precision: 0.2593 | F1: 0.4118 | Time: 70.86s
+Epoch 4 [Train]:   0%|                                                                  | 0/17 [00:00<?, ?it/s]/Users/wadarei/2WINS_AI_test/.venv/lib/python3.13/site-packages/torch/utils/data/dataloader.py:692: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, device pinned memory won't be used.
+  warnings.warn(warn_msg)
+2025-12-06 17:30:16,227 - INFO - Epoch 4/20 | Train Loss: 0.7047 | Val Loss: 0.6918 | Recall: 0.4571 | Precision: 0.2581 | F1: 0.3299 | Time: 71.55s
+Epoch 5 [Train]:   0%|                                                                  | 0/17 [00:00<?, ?it/s]/Users/wadarei/2WINS_AI_test/.venv/lib/python3.13/site-packages/torch/utils/data/dataloader.py:692: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, device pinned memory won't be used.
+  warnings.warn(warn_msg)
+2025-12-06 17:31:29,353 - INFO - Epoch 5/20 | Train Loss: 0.6838 | Val Loss: 0.6944 | Recall: 0.1714 | Precision: 0.3529 | F1: 0.2308 | Time: 73.12s
+Epoch 6 [Train]:   0%|                                                                  | 0/17 [00:00<?, ?it/s]/Users/wadarei/2WINS_AI_test/.venv/lib/python3.13/site-packages/torch/utils/data/dataloader.py:692: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, device pinned memory won't be used.
+  warnings.warn(warn_msg)
+2025-12-06 17:32:39,679 - INFO - Epoch 6/20 | Train Loss: 0.7074 | Val Loss: 0.6865 | Recall: 0.5000 | Precision: 0.3846 | F1: 0.4348 | Time: 70.32s
+Epoch 7 [Train]:   0%|                                                                  | 0/17 [00:00<?, ?it/s]/Users/wadarei/2WINS_AI_test/.venv/lib/python3.13/site-packages/torch/utils/data/dataloader.py:692: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, device pinned memory won't be used.
+  warnings.warn(warn_msg)
+2025-12-06 17:33:49,469 - INFO - Epoch 7/20 | Train Loss: 0.6858 | Val Loss: 0.6635 | Recall: 0.4714 | Precision: 0.4074 | F1: 0.4371 | Time: 69.79s
+Epoch 8 [Train]:   0%|                                                                  | 0/17 [00:00<?, ?it/s]/Users/wadarei/2WINS_AI_test/.venv/lib/python3.13/site-packages/torch/utils/data/dataloader.py:692: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, device pinned memory won't be used.
+  warnings.warn(warn_msg)
+2025-12-06 17:35:01,862 - INFO - Epoch 8/20 | Train Loss: 0.6963 | Val Loss: 0.7724 | Recall: 0.0286 | Precision: 0.6667 | F1: 0.0548 | Time: 72.39s
+Epoch 9 [Train]:   0%|                                                                  | 0/17 [00:00<?, ?it/s]/Users/wadarei/2WINS_AI_test/.venv/lib/python3.13/site-packages/torch/utils/data/dataloader.py:692: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, device pinned memory won't be used.
+  warnings.warn(warn_msg)
+2025-12-06 17:36:14,784 - INFO - Epoch 9/20 | Train Loss: 0.6756 | Val Loss: 0.7376 | Recall: 0.5857 | Precision: 0.2887 | F1: 0.3868 | Time: 72.92s
+Epoch 10 [Train]:   0%|                                                                 | 0/17 [00:00<?, ?it/s]/Users/wadarei/2WINS_AI_test/.venv/lib/python3.13/site-packages/torch/utils/data/dataloader.py:692: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, device pinned memory won't be used.
+  warnings.warn(warn_msg)
+2025-12-06 17:37:24,323 - INFO - Epoch 10/20 | Train Loss: 0.6878 | Val Loss: 0.6724 | Recall: 0.7143 | Precision: 0.2475 | F1: 0.3676 | Time: 69.54s
+Epoch 11 [Train]:   0%|                                                                 | 0/17 [00:00<?, ?it/s]/Users/wadarei/2WINS_AI_test/.venv/lib/python3.13/site-packages/torch/utils/data/dataloader.py:692: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, device pinned memory won't be used.
+  warnings.warn(warn_msg)
+2025-12-06 17:38:33,832 - INFO - Epoch 11/20 | Train Loss: 0.6986 | Val Loss: 0.6839 | Recall: 0.4571 | Precision: 0.3516 | F1: 0.3975 | Time: 69.51s
+Epoch 12 [Train]:   0%|                                                                 | 0/17 [00:00<?, ?it/s]/Users/wadarei/2WINS_AI_test/.venv/lib/python3.13/site-packages/torch/utils/data/dataloader.py:692: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, device pinned memory won't be used.
+  warnings.warn(warn_msg)
+2025-12-06 17:39:45,837 - INFO - Epoch 12/20 | Train Loss: 0.6847 | Val Loss: 0.7104 | Recall: 0.6571 | Precision: 0.3333 | F1: 0.4423 | Time: 72.00s
+Epoch 13 [Train]:   0%|                                                                 | 0/17 [00:00<?, ?it/s]/Users/wadarei/2WINS_AI_test/.venv/lib/python3.13/site-packages/torch/utils/data/dataloader.py:692: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, device pinned memory won't be used.
+  warnings.warn(warn_msg)
+2025-12-06 17:40:59,568 - INFO - Epoch 13/20 | Train Loss: 0.6782 | Val Loss: 0.6901 | Recall: 0.4714 | Precision: 0.4074 | F1: 0.4371 | Time: 73.73s
+Epoch 14 [Train]:   0%|                                                                 | 0/17 [00:00<?, ?it/s]/Users/wadarei/2WINS_AI_test/.venv/lib/python3.13/site-packages/torch/utils/data/dataloader.py:692: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, device pinned memory won't be used.
+  warnings.warn(warn_msg)
+2025-12-06 17:42:09,212 - INFO - Epoch 14/20 | Train Loss: 0.6828 | Val Loss: 0.6901 | Recall: 0.9857 | Precision: 0.2614 | F1: 0.4132 | Time: 69.64s
+Epoch 15 [Train]:   0%|                                                                 | 0/17 [00:00<?, ?it/s]/Users/wadarei/2WINS_AI_test/.venv/lib/python3.13/site-packages/torch/utils/data/dataloader.py:692: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, device pinned memory won't be used.
+  warnings.warn(warn_msg)
+2025-12-06 17:43:19,078 - INFO - Epoch 15/20 | Train Loss: 0.6930 | Val Loss: 0.7213 | Recall: 0.0857 | Precision: 1.0000 | F1: 0.1579 | Time: 69.86s
+Epoch 16 [Train]:   0%|                                                                 | 0/17 [00:00<?, ?it/s]/Users/wadarei/2WINS_AI_test/.venv/lib/python3.13/site-packages/torch/utils/data/dataloader.py:692: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, device pinned memory won't be used.
+  warnings.warn(warn_msg)
+2025-12-06 17:44:29,494 - INFO - Epoch 16/20 | Train Loss: 0.6869 | Val Loss: 0.7116 | Recall: 0.0857 | Precision: 1.0000 | F1: 0.1579 | Time: 70.41s
+Epoch 17 [Train]:   0%|                                                                 | 0/17 [00:00<?, ?it/s]/Users/wadarei/2WINS_AI_test/.venv/lib/python3.13/site-packages/torch/utils/data/dataloader.py:692: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, device pinned memory won't be used.
+  warnings.warn(warn_msg)
+2025-12-06 17:45:39,002 - INFO - Epoch 17/20 | Train Loss: 0.6606 | Val Loss: 0.7220 | Recall: 0.8286 | Precision: 0.2900 | F1: 0.4296 | Time: 69.51s
+Epoch 18 [Train]:   0%|                                                                 | 0/17 [00:00<?, ?it/s]/Users/wadarei/2WINS_AI_test/.venv/lib/python3.13/site-packages/torch/utils/data/dataloader.py:692: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, device pinned memory won't be used.
+  warnings.warn(warn_msg)
+2025-12-06 17:46:47,791 - INFO - Epoch 18/20 | Train Loss: 0.6557 | Val Loss: 0.6416 | Recall: 0.5429 | Precision: 0.3393 | F1: 0.4176 | Time: 68.79s
+Epoch 19 [Train]:   0%|                                                                 | 0/17 [00:00<?, ?it/s]/Users/wadarei/2WINS_AI_test/.venv/lib/python3.13/site-packages/torch/utils/data/dataloader.py:692: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, device pinned memory won't be used.
+  warnings.warn(warn_msg)
+2025-12-06 17:47:57,250 - INFO - Epoch 19/20 | Train Loss: 0.6647 | Val Loss: 0.6635 | Recall: 0.5143 | Precision: 0.4444 | F1: 0.4768 | Time: 69.46s
+Epoch 20 [Train]:   0%|                                                                 | 0/17 [00:00<?, ?it/s]/Users/wadarei/2WINS_AI_test/.venv/lib/python3.13/site-packages/torch/utils/data/dataloader.py:692: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, device pinned memory won't be used.
+  warnings.warn(warn_msg)
+2025-12-06 17:49:06,976 - INFO - Epoch 20/20 | Train Loss: 0.6845 | Val Loss: 0.6722 | Recall: 0.2571 | Precision: 1.0000 | F1: 0.4091 | Time: 69.72s
+2025-12-06 17:49:06,977 - INFO - Training completed.
+2025-12-06 17:49:06,978 - INFO - Best Validation Recall: 1.0000

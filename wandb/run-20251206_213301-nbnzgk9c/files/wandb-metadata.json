@@ -1,0 +1,37 @@
+{
+  "os": "macOS-15.6.1-arm64-arm-64bit-Mach-O",
+  "python": "CPython 3.13.3",
+  "startedAt": "2025-12-06T12:33:01.727914Z",
+  "program": "/Users/wadarei/2WINS_AI_test/main.py",
+  "codePath": "main.py",
+  "codePathLocal": "main.py",
+  "git": {
+    "remote": "https://github.com/ReiWada1216/2WINS_AI_test",
+    "commit": "caa75080b07cb07b5b68623cbaaa70896891c28d"
+  },
+  "email": "lee137ritsss@gmail.com",
+  "root": "/Users/wadarei/2WINS_AI_test",
+  "host": "wadareinoMacBook-Pro.local",
+  "executable": "/Users/wadarei/2WINS_AI_test/.venv/bin/python",
+  "cpu_count": 8,
+  "cpu_count_logical": 8,
+  "disk": {
+    "/": {
+      "total": "245107195904",
+      "used": "135813234688"
+    }
+  },
+  "memory": {
+    "total": "8589934592"
+  },
+  "apple": {
+    "name": "Apple M1",
+    "ecpuCores": 4,
+    "pcpuCores": 4,
+    "gpuCores": 8,
+    "memoryGb": 8,
+    "swapTotalBytes": "4294967296",
+    "ramTotalBytes": "8589934592"
+  },
+  "writerId": "5jjrfmid9cq44xy1gzpw3n014e6qhws7"
+}

@@ -1,0 +1,33 @@
+Preparing data loaders...
+Data Split: Train=1080, Val=135, Test=135
+Initializing model...
+2025-12-06 21:33:02,974 - INFO - Start training for 20 epochs on mps...
+Epoch 1 [Train]:   0%|                                                                  | 0/68 [00:00<?, ?it/s]/Users/wadarei/2WINS_AI_test/.venv/lib/python3.13/site-packages/torch/utils/data/dataloader.py:692: UserWarning: 'pin_memory' argument is set as true but not supported on MPS now, device pinned memory won't be used.
+  warnings.warn(warn_msg)
+Epoch 1 [Train]:   7%|███▎                                         | 5/68 [03:46<49:13, 46.88s/it, loss=1.3378]Exception ignored in: <function _MultiProcessingDataLoaderIter.__del__ at 0x106cb8f40>
+Traceback (most recent call last):
+  File "/Users/wadarei/2WINS_AI_test/.venv/lib/python3.13/site-packages/torch/utils/data/dataloader.py", line 1654, in __del__
+    self._shutdown_workers()
+  File "/Users/wadarei/2WINS_AI_test/.venv/lib/python3.13/site-packages/torch/utils/data/dataloader.py", line 1618, in _shutdown_workers
+    w.join(timeout=_utils.MP_STATUS_CHECK_INTERVAL)
+  File "/opt/homebrew/Cellar/python@3.13/3.13.3/Frameworks/Python.framework/Versions/3.13/lib/python3.13/multiprocessing/process.py", line 149, in join
+    res = self._popen.wait(timeout)
+  File "/opt/homebrew/Cellar/python@3.13/3.13.3/Frameworks/Python.framework/Versions/3.13/lib/python3.13/multiprocessing/popen_fork.py", line 41, in wait
+    if not wait([self.sentinel], timeout):
+  File "/opt/homebrew/Cellar/python@3.13/3.13.3/Frameworks/Python.framework/Versions/3.13/lib/python3.13/multiprocessing/connection.py", line 1148, in wait
+    ready = selector.select(timeout)
+  File "/opt/homebrew/Cellar/python@3.13/3.13.3/Frameworks/Python.framework/Versions/3.13/lib/python3.13/selectors.py", line 398, in select
+    fd_event_list = self._selector.poll(timeout)
+KeyboardInterrupt:
+Traceback (most recent call last):                                                                             
+  File "/Users/wadarei/2WINS_AI_test/main.py", line 114, in <module>
+    main()
+    ~~~~^^
+  File "/Users/wadarei/2WINS_AI_test/main.py", line 108, in main
+    trainer.fit(num_epochs=cfg.epochs)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/wadarei/2WINS_AI_test/src/trainer.py", line 161, in fit
+    train_loss = self.train_one_epoch(epoch)
+  File "/Users/wadarei/2WINS_AI_test/src/trainer.py", line 77, in train_one_epoch
+    images = images.to(self.device)
+KeyboardInterrupt

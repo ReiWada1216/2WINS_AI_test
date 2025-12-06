@@ -1,21 +1,52 @@
+import os
+from pathlib import Path
 
-# Configuration for Binary Classification Project
+# ==========================================
+# プロジェクト共通の定数設定
+# ==========================================
 
-# 画像サイズ
-IMAGE_SIZE = 256  # 画像をこのサイズにリサイズ
+# 乱数シード（再現性確保のため）
+SEED: int = 42
+
+# 画像サイズ設定
+ORIGINAL_SIZE: int = 1024  # 元画像のサイズ
+PATCH_SIZE: int = 224       # 学習・推論に使用するパッチサイズ
 
 # 学習設定
-BATCH_SIZE = 32
-VALIDATION_SPLIT = 0.2
-SEED = 42
-EPOCHS = 10
-LEARNING_RATE = 1e-4
+BATCH_SIZE: int = 32
+NUM_WORKERS: int = 2     # DataLoaderのワーカー数
 
-# データパス
-DATA_PROCESSED_DIR = "data/processed"
-DATA_RAW_DIR = "data/raw"
+# クラスラベル定義
+CLASS_LABELS: dict[int, str] = {
+    0: "Good",
+    1: "Bad"
+}
 
-# クラス重み
-N_GOOD = 1000
-N_BAD = 350
-CLASS_WEIGHTS_TENSOR = torch.tensor([1.0, N_GOOD / N_BAD], dtype=torch.float32)
+# クラスの不均衡対策 (Good: 1000, Bad: 350)
+# Badクラスの重みを高く設定する
+# 計算例: N_total / (N_class * n_classes) or Simple inverse ratio
+# ここでは簡易的に Good=1.0 としたときの相対比率を設定
+# 1000 / 350 ≈ 2.857
+CLASS_WEIGHTS: list[float] = [1.0, 2.86]
+
+# ==========================================
+# パス設定
+# ==========================================
+
+# プロジェクトルートディレクトリ（このファイルの2つ上の階層をルートとする）
+PROJECT_ROOT: Path = Path(__file__).parent.parent.resolve()
+
+# データディレクトリ
+DATA_DIR: Path = PROJECT_ROOT / "data"
+RAW_DATA_DIR: Path = DATA_DIR / "raw"
+PROCESSED_DATA_DIR: Path = DATA_DIR / "processed"
+
+# モデル重み保存ディレクトリ
+WEIGHTS_DIR: Path = PROJECT_ROOT / "weights"
+
+# 出力ディレクトリ（ログや結果）
+RESULTS_DIR: Path = PROJECT_ROOT / "results"
+
+# ディレクトリが存在しない場合は作成
+for d in [DATA_DIR, RAW_DATA_DIR, PROCESSED_DATA_DIR, WEIGHTS_DIR, RESULTS_DIR]:
+    d.mkdir(parents=True, exist_ok=True)
