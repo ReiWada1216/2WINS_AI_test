@@ -14,3 +14,9 @@ weights/
 # 環境設定
 .env
 .venv/
+
+# wandb
+wandb/
+*.wandb
+.wandb
+artifacts/wandb/

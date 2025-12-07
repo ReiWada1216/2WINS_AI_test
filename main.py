@@ -1,41 +1,21 @@
 import argparse
-import random
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import wandb
 
 import src.config as config
+import src.utils as utils
 from src.dataset import get_train_val_loaders
 from src.models import get_model
 from src.trainer import Trainer
 
-def set_seed(seed: int = 42):
-    """
-    再現性確保のために乱数シードを固定する。
-    """
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
-
-def get_device() -> str:
-    """
-    利用可能な最適なデバイスを取得する。
-    Mac (MPS) > CUDA > CPU の優先順位。
-    """
-    if torch.backends.mps.is_available():
-        return "mps"
-    elif torch.cuda.is_available():
-        return "cuda"
-    else:
-        return "cpu"
-
 def main():
+    parser = argparse.ArgumentParser(description="Defect Detection Training & Evaluation")
+    parser.add_argument("--eval_only", action="store_true", help="Skip training and run only evaluation on Test Set")
+    parser.add_argument("--unzip", action="store_true", help="Unzip data before running")
+    args = parser.parse_args()
+    
     """
     学習プロセスのメインエントリーポイント。
     """
@@ -43,13 +23,19 @@ def main():
     # -----------------------------------------------------
     # 1. 初期設定
     # -----------------------------------------------------
-    set_seed(config.SEED)
-    device = get_device()
+    utils.seed_everything(config.SEED)
+    device = utils.get_device()
     print(f"Using device: {device}")
+
+    # 解凍処理(オプション)
+    if args.unzip:
+        # 想定されるzipパス
+        zip_path = config.DATA_DIR / "dataset.zip" 
+        utils.unzip_data(zip_path, config.PROCESSED_DATA_DIR)
     
     # W&Bの初期化
     wandb.init(
-        project="defect-detection-patch-64",
+        project="defect-detection-patch-64", # プロジェクト名は要件に合わせて変更可
         config={
             "seed": config.SEED,
             "patch_size": config.PATCH_SIZE,
@@ -57,8 +43,10 @@ def main():
             "batch_size": config.BATCH_SIZE,
             "class_weights": config.CLASS_WEIGHTS,
             "device": device,
-            "learning_rate": 1e-3, # ここで定義
-            "epochs": 20           # 仮定値
+            "learning_rate": config.LEARNING_RATE, 
+            "epochs": config.EPOCHS,
+            "num_classes": config.NUM_CLASSES,
+            "threshold": config.THRESHOLD
         }
     )
     
@@ -105,8 +93,39 @@ def main():
         device=device
     )
     
-    trainer.fit(num_epochs=cfg.epochs)
+    if not args.eval_only:
+        trainer.fit(num_epochs=cfg.epochs)
     
+    # -----------------------------------------------------
+    # 5. 最終評価
+    # -----------------------------------------------------
+    print("\nStarting Final Evaluation on Test Set...")
+    
+    # ベストモデルのロード
+    best_model_path = config.WEIGHTS_DIR / "best_model.pth"
+    if best_model_path.exists():
+        print(f"Loading best model from {best_model_path}")
+        model.load_state_dict(torch.load(best_model_path, map_location=device))
+    else:
+        print("Warning: Best model weights not found. Using current model weights.")
+        
+    # Test Set評価の実行
+    from src.evaluator import evaluate_test_set
+    
+    # test_loaderが作成されているか確認
+    if test_loader is not None:
+        test_metrics = evaluate_test_set(
+            model=model,
+            test_loader=test_loader,
+            device=device,
+            threshold=cfg.threshold # config値またはwandb設定値を使用
+        )
+        
+        # W&Bに記録
+        wandb.log(test_metrics)
+    else:
+        print("Test loader is None. Skipping evaluation.")
+        
     # W&B終了
     wandb.finish()
 

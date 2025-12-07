@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from torchvision import models
 from typing import Optional
+import src.config as config
 
 class SimpleResNet(nn.Module):
     """
@@ -11,7 +12,7 @@ class SimpleResNet(nn.Module):
     転移学習の恩恵を最大化するため、アーキテクチャは変更せずそのまま利用する。
     """
     
-    def __init__(self, num_classes: int = 2, pretrained: bool = True):
+    def __init__(self, num_classes: int = config.NUM_CLASSES, pretrained: bool = True):
         """
         初期化メソッド。
         
@@ -53,7 +54,7 @@ def get_model(device: str = "cpu") -> nn.Module:
     Returns:
         nn.Module: 初期化されたモデル
     """
-    model = SimpleResNet(num_classes=2, pretrained=True)
+    model = SimpleResNet(num_classes=config.NUM_CLASSES, pretrained=True)
     model.to(device)
     return model
 

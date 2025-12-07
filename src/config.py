@@ -15,12 +15,18 @@ PATCH_SIZE: int = 224       # 学習・推論に使用するパッチサイズ
 # 学習設定
 BATCH_SIZE: int = 32
 NUM_WORKERS: int = 2     # DataLoaderのワーカー数
+EPOCHS: int = 100
+LEARNING_RATE: float = 1e-4
 
 # クラスラベル定義
 CLASS_LABELS: dict[int, str] = {
     0: "Good",
     1: "Bad"
 }
+NUM_CLASSES: int = len(CLASS_LABELS)
+
+# 判定閾値 (Evaluation)
+THRESHOLD: float = 0.8
 
 # クラスの不均衡対策 (Good: 1000, Bad: 350)
 # Badクラスの重みを高く設定する
