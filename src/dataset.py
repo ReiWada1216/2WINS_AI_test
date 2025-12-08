@@ -1,7 +1,8 @@
 import os
 from pathlib import Path
 from typing import Optional, Tuple, List, Callable
-
+import random
+import numpy as np
 
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -11,255 +12,310 @@ from PIL import Image
 
 import src.config as config
 
-def get_train_transforms(size: int = config.PATCH_SIZE) -> transforms.Compose:
+# ==========================================
+# Transforms
+# ==========================================
+
+def get_transforms(mode: str = "train") -> transforms.Compose:
     """
-    学習用データ変換を取得する関数。
-    
-    パッチベース学習のために、大きな元画像からランダムに切り出す処理を行う。
+    データ変換パイプラインを取得する関数。
+    RGB -> Grayscale -> Tensor (0-1)
     
     Args:
-        size (int): 切り出すパッチのサイズ (デフォルト: config.PATCH_SIZE)
-        
-    Returns:
-        transforms.Compose: 適用する変換パイプライン
+        mode (str): 'train' or 'eval'
     """
-    return transforms.Compose([
-        # ここでランダムに64x64のパッチを切り出す
-        transforms.RandomCrop(size),
-        
-        # データ拡張
-        transforms.RandomHorizontalFlip(p=0.5),
-        transforms.RandomVerticalFlip(p=0.5),
-        transforms.RandomRotation(degrees=15),
-        
-        # Tensor化と正規化
-        transforms.ToTensor(),
-        # ImageNetの平均・標準偏差を使用するのが一般的だが、独自のデータセットの場合は計算した方が良い場合もある
-        # ここでは一般的な値を使用
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], 
-                             std=[0.229, 0.224, 0.225])
-    ])
-
-def get_val_transforms(size: int = config.PATCH_SIZE) -> transforms.Compose:
-    """
-    検証用データ変換を取得する関数。
+    ops = []
     
-    検証時はランダム性、特にAugmentationを排除するが、
-    パッチ切り出しについては要件に従いCenterCropなどを使用する。
+    # 共通: グレースケール変換 (1ch) -> Tensor
+    # NOTE: MVTecPatchDataset内でPILロード時にconvert('L')するため、
+    # ここでは主にTensor化を行う。
     
-    Args:
-        size (int): 切り出すパッチのサイズ (デフォルト: config.PATCH_SIZE)
-        
-    Returns:
-        transforms.Compose: 適用する変換パイプライン
-    """
-    return transforms.Compose([
-        # 検証用は中央を切り出す（要件準拠）
-        transforms.CenterCrop(size),
-        
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], 
-                             std=[0.229, 0.224, 0.225])
-    ])
+    if mode == "train":
+        # 学習時のみAugmentation (必要であれば)
+        # Autoencoderの再構成タスクでは、極端な幾何学的変換は控えるが、
+        # FlipやRotationは有効な場合がある。
+        ops.extend([
+            transforms.RandomHorizontalFlip(p=0.5),
+            transforms.RandomVerticalFlip(p=0.5),
+            # transforms.RandomRotation(degrees=15), 
+        ])
 
-class CustomDataset(Dataset):
+    ops.append(transforms.ToTensor())
+    # ToTensor() converts [0, 255] -> [0.0, 1.0]
+
+    return transforms.Compose(ops)
+
+
+# ==========================================
+# Dataset
+# ==========================================
+
+class MVTecImageDataset(Dataset):
     """
-    製品外観検査用カスタムデータセットクラス。
-    画像パスのリストと対応するラベルを受け取り、データをロードして変換を適用する。
+    推論・評価用データセット。
+    1024x1024の画像全体を返す。
     """
     
     def __init__(self, 
                  image_paths: List[str], 
-                 labels: List[int], 
+                 labels: List[int],
                  transform: Optional[Callable] = None):
-        """
-        初期化メソッド。
-        
-        Args:
-            image_paths (List[str]): 画像ファイルパスのリスト
-            labels (List[int]): 各画像に対応するラベルのリスト (0: Good, 1: Bad)
-            transform (Optional[Callable]): 画像に適用する変換 (torchvision.transforms)
-        """
         self.image_paths = image_paths
         self.labels = labels
         self.transform = transform
-
+        
     def __len__(self) -> int:
-        """
-        データセットのサイズを返す。
-        
-        Returns:
-            int: データ数
-        """
         return len(self.image_paths)
-
-    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, int]:
+    
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, int, str]:
         """
-        指定されたインデックスのデータ（画像とラベル）を取得する。
-        
-        Args:
-            idx (int): データのインデックス
-            
-        Returns:
-            Tuple[torch.Tensor, int]: 変換後の画像テンソルとラベル
+        画像全体を取得する。
+        Return:
+            img_tensor: (1, 1024, 1024)
+            label: int (0 or 1)
+            path: str
         """
         img_path = self.image_paths[idx]
         label = self.labels[idx]
         
-        # 画像読み込み (PILを使用)
-        # OpenCVで読み込んでPILに変換する方法もあるが、torchvisionはPILとの親和性が高い
         try:
-            image = Image.open(img_path).convert("RGB")
+            with Image.open(img_path) as img:
+                img = img.convert("L")
+                if self.transform:
+                    img = self.transform(img)
+                return img, label, img_path
         except Exception as e:
-            print(f"Error loading image {img_path}: {e}")
-            # エラー時は真っ黒な画像を返す等のハンドリングが考えられるが、
-            # ここではエラーを再送出する
-            raise e
-            
-        if self.transform:
-            image = self.transform(image)
-            
-        return image, label
+            print(f"Error loading {img_path}: {e}")
+            # Dummy return
+            return torch.zeros((1, config.ORIGINAL_SIZE, config.ORIGINAL_SIZE)), label, img_path
 
-def get_train_val_loaders(
+class MVTecPatchDataset(Dataset):
+    """
+    M1 Mac (メモリ制約) 向け高効率パッチデータセット。
+    1024x1024の画像をメモリに展開せず、__getitem__で必要な256x256パッチを
+    オンザフライでロード・クロップする。
+    """
+    
+    def __init__(self, 
+                 image_paths: List[str], 
+                 labels: List[int],
+                 transform: Optional[Callable] = None,
+                 patch_size: int = config.PATCH_SIZE,
+                 stride: int = config.STRIDE,
+                 original_size: int = config.ORIGINAL_SIZE):
+        
+        self.image_paths = image_paths
+        self.labels = labels
+        self.transform = transform
+        self.patch_size = patch_size
+        self.stride = stride
+        self.original_size = original_size
+        
+        # パッチメタデータの生成
+        # リスト形式: (image_index, top, left)
+        # path文字列を繰り返すとメモリを食うため、indexで管理する。
+        self.patches = []
+        
+        # パッチ座標の計算
+        coords = []
+        current = 0
+        while current + patch_size <= original_size:
+            coords.append(current)
+            current += stride
+            
+        for idx, _ in enumerate(image_paths):
+            # Optimization: Load image once per file
+            img_path = self.image_paths[idx]
+            try:
+                with Image.open(img_path) as img:
+                    img = img.convert("L")
+                    
+                    for top in coords:
+                        for left in coords:
+                            # Pre-check: Crop and calculate mean
+                            patch = img.crop((left, top, left + self.patch_size, top + self.patch_size))
+                            # Convert to numpy for fast mean calculation
+                            # Only keep if mean intensity > threshold
+                            if np.array(patch).mean() > config.BACKGROUND_THRESHOLD:
+                                self.patches.append((idx, top, left))
+            except Exception as e:
+                print(f"Warning: Failed to load {img_path} during init: {e}")
+                continue
+
+                    
+    def __len__(self) -> int:
+        return len(self.patches)
+
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, int]:
+        """
+        パッチ画像を取得する。
+        Return:
+            img_tensor: (1, 256, 256)
+            label: int (0 or 1)
+        """
+        img_idx, top, left = self.patches[idx]
+        img_path = self.image_paths[img_idx]
+        label = self.labels[img_idx]
+        
+        try:
+            # グレースケールで開く ('L')
+            with Image.open(img_path) as img:
+                img = img.convert("L")
+                
+                # クロップ (left, top, right, bottom)
+                patch = img.crop((left, top, left + self.patch_size, top + self.patch_size))
+                
+                if self.transform:
+                    patch = self.transform(patch)
+                    
+                return patch, label
+                
+        except Exception as e:
+            print(f"Error loading {img_path}: {e}")
+            return torch.zeros((1, self.patch_size, self.patch_size)), label
+
+
+# ==========================================
+# Data Loading & Splitting
+# ==========================================
+
+def get_dataloaders(
     data_dir: str = str(config.PROCESSED_DATA_DIR),
-    val_size: float = 0.1,  # 全体の10%
-    test_size: float = 0.1, # 全体の10%
-    batch_size: int = config.BATCH_SIZE,
-    num_workers: int = config.NUM_WORKERS
+    val_ratio: float = 0.1,
+    test_ratio: float = 0.1,
+    bad_ratio: float = 0.35, # Goodに対するBadの比率 (Val/Test)
+    batch_size: int = 32,
+    num_workers: int = config.NUM_WORKERS,
+    # 互換性のためのダミー引数 (main.pyからの呼び出しに対応する場合)
+    phase2: bool = True,
+    return_test_full_image: bool = False # Testセットをパッチではなくフル画像で返すか
 ) -> Tuple[DataLoader, DataLoader, DataLoader]:
     """
-    学習・検証・テストデータのDataLoaderを作成して返す関数。
-    sklearn.model_selection.train_test_split を2回使用して、
-    Train(80%) / Val(10%) / Test(10%) の層化分割を行う。
-    
-    Args:
-        data_dir (str): データディレクトリのパス
-        val_size (float): 検証データの割合 (全体に対する割合, default: 0.1)
-        test_size (float): テストデータの割合 (全体に対する割合, default: 0.1)
-        batch_size (int): バッチサイズ
-        num_workers (int): データ読み込みのワーカー数
-        
-    Returns:
-        Tuple[DataLoader, DataLoader, DataLoader]: Train, Val, Test Loaders
+    データ分割とDataLoaderの作成を行う。
     """
     
-    # 画像パスとラベルのリストを作成
-    image_paths = []
-    labels = []
-    
-    # ディレクトリ構成を走査
     search_path = Path(data_dir)
+    class_map = {"good": 0, "bad": 1}
     
-    class_map = {
-        "good": 0,
-        "bad": 1
-    }
+    good_paths = []
+    bad_paths = []
     
-    found_files = False
-    
+    # 画像収集
     if search_path.exists():
         for class_name, label_id in class_map.items():
             class_dir = search_path / class_name
             if class_dir.exists():
-                files = list(class_dir.glob("*.png")) # PNG指定
-                for f in files:
-                    image_paths.append(str(f))
-                    labels.append(label_id)
-                if len(files) > 0:
-                    found_files = True
+                files = sorted([str(f) for f in class_dir.glob("*.png")])
+                if label_id == 0:
+                    good_paths.extend(files)
+                else:
+                    bad_paths.extend(files)
     
-    if not found_files:
-        print(f"Warning: No images found in {data_dir} with 'good'/'bad' subdirectories.")
-        print("Creating dummy data for validation purposes if needed...")
-        # 実装動作確認用ダミーデータ生成ロジックが必要ならここに追加
-    
-    # データが見つかった場合のみ分割
-    if len(image_paths) > 0:
-        # Step 1: 全体を Train と Temp (Val + Test) に分割
-        # Tempの割合 = val_size + test_size
-        temp_size = val_size + test_size
-        
-        X_train, X_temp, y_train, y_temp = train_test_split(
-            image_paths, 
-            labels, 
-            test_size=temp_size, 
-            random_state=config.SEED, 
-            stratify=labels
-        )
-        
-        # Step 2: Temp を Val と Test に分割
-        # Temp内でのTestの割合 = test_size / temp_size
-        # 例: 0.1 / 0.2 = 0.5 (50%)
-        test_size_in_temp = test_size / temp_size
-        
-        X_val, X_test, y_val, y_test = train_test_split(
-            X_temp, 
-            y_temp, 
-            test_size=test_size_in_temp, 
-            random_state=config.SEED, 
-            stratify=y_temp
-        )
-        
-        print(f"Data Split: Train={len(X_train)}, Val={len(X_val)}, Test={len(X_test)}")
-        
-        # Dataset作成
-        train_dataset = CustomDataset(
-            image_paths=X_train, 
-            labels=y_train, 
-            transform=get_train_transforms()
-        )
-        
-        val_dataset = CustomDataset(
-            image_paths=X_val, 
-            labels=y_val, 
-            transform=get_val_transforms()
-        )
-
-        test_dataset = CustomDataset(
-            image_paths=X_test, 
-            labels=y_test, 
-            transform=get_val_transforms() # TestもValと同じTransform (Augmentationなし)
-        )
-        
-        # DataLoader作成
-        train_loader = DataLoader(
-            train_dataset,
-            batch_size=batch_size,
-            shuffle=True, 
-            num_workers=num_workers,
-            pin_memory=True
-        )
-        
-        val_loader = DataLoader(
-            val_dataset,
-            batch_size=batch_size,
-            shuffle=False, 
-            num_workers=num_workers,
-            pin_memory=True
-        )
-
-        test_loader = DataLoader(
-            test_dataset,
-            batch_size=batch_size,
-            shuffle=False, 
-            num_workers=num_workers,
-            pin_memory=True
-        )
-        
-        return train_loader, val_loader, test_loader
-    else:
+    if not good_paths:
+        print(f"Error: No 'good' images found in {data_dir}")
         return None, None, None
+        
+    # --- Split Logic ---
+    
+            
+    # --- Split Logic ---
+    
+    # 1. Good Split (80/10/10)
+    train_good, temp_good = train_test_split(
+        good_paths, test_size=(val_ratio + test_ratio), random_state=config.SEED, shuffle=True
+    )
+    
+    val_test_ratio = test_ratio / (val_ratio + test_ratio) # 0.5
+    val_good, test_good = train_test_split(
+        temp_good, test_size=val_test_ratio, random_state=config.SEED, shuffle=True
+    )
+    
+    # 2. Bad Split
+    # Phase 1 (Classification): Bad data required in Train
+    # Phase 2 (Anomaly Detection): Bad data only in Val/Test
+    
+    train_bad = []
+    val_bad = []
+    test_bad = []
+    
+    if len(bad_paths) > 0:
+        if not phase2:
+            # Phase 1: Split Bad into Train/Val/Test (Same ratio as Good)
+            train_bad_all, temp_bad = train_test_split(
+                bad_paths, test_size=(val_ratio + test_ratio), random_state=config.SEED, shuffle=True
+            )
+            val_bad_all, test_bad_all = train_test_split(
+                temp_bad, test_size=val_test_ratio, random_state=config.SEED, shuffle=True
+            )
+            train_bad = train_bad_all
+            val_bad = val_bad_all
+            test_bad = test_bad_all
+        else:
+            # Phase 2: Bad used only for Val/Test (Anomaly metrics)
+            # Use 'bad_ratio' to control amount relative to Good samples in Val/Test
+            n_val_bad = int(len(val_good) * bad_ratio)
+            n_test_bad = int(len(test_good) * bad_ratio)
+            total_needed_bad = n_val_bad + n_test_bad
+            
+            random.seed(config.SEED)
+            random.shuffle(bad_paths)
+            
+            if len(bad_paths) < total_needed_bad:
+                split_idx = len(bad_paths) // 2
+                val_bad = bad_paths[:split_idx]
+                test_bad = bad_paths[split_idx:]
+            else:
+                val_bad = bad_paths[:n_val_bad]
+                test_bad = bad_paths[n_val_bad:n_val_bad+n_test_bad]
+    else:
+        print("Warning: No bad images found. Val/Test will only contain good images.")
+            
+    # パスリストとラベルリストの作成
+    # Train
+    train_paths = train_good + train_bad
+    train_labels = [0] * len(train_good) + [1] * len(train_bad)
+    
+    # Val
+    val_paths = val_good + val_bad
+    val_labels = [0] * len(val_good) + [1] * len(val_bad)
+    
+    # Test
+    test_paths = test_good + test_bad
+    test_labels = [0] * len(test_good) + [1] * len(test_bad)
+    
+    print(f"Dataset Split Summary (Phase 2={phase2}):")
+    print(f"  Train: {len(train_paths)} (Good: {len(train_good)}, Bad: {len(train_bad)})")
+    print(f"  Val  : {len(val_paths)} (Good: {len(val_good)}, Bad: {len(val_bad)})")
+    print(f"  Test : {len(test_paths)} (Good: {len(test_good)}, Bad: {len(test_bad)})")
+    
+    # Dataset作成
+    train_dataset = MVTecPatchDataset(train_paths, train_labels, transform=get_transforms("train"))
+    val_dataset = MVTecPatchDataset(val_paths, val_labels, transform=get_transforms("eval"))
+    
+    if return_test_full_image:
+        test_dataset = MVTecImageDataset(test_paths, test_labels, transform=get_transforms("eval"))
+    else:
+        test_dataset = MVTecPatchDataset(test_paths, test_labels, transform=get_transforms("eval"))
+    
+    # DataLoader作成
+    train_loader = DataLoader(
+        train_dataset, batch_size=batch_size, shuffle=True, 
+        num_workers=num_workers, pin_memory=True, persistent_workers=False
+    )
+    val_loader = DataLoader(
+        val_dataset, batch_size=batch_size, shuffle=False, 
+        num_workers=num_workers, pin_memory=True
+    )
+    
+    test_batch_size = 1 if return_test_full_image else batch_size
+    test_loader = DataLoader(
+        test_dataset, batch_size=test_batch_size, shuffle=False, 
+        num_workers=num_workers, pin_memory=True
+    )
+    
+    return train_loader, val_loader, test_loader
 
 if __name__ == "__main__":
-    # 簡易テスト
-    print("Testing dataset module...")
-    t = get_train_transforms()
-    print(f"Train transforms: {t}")
-    
-    # ダミーデータローダー取得テスト（パスが存在しないとNoneが返る可能性が高いがコードとして通るか確認）
-    tr_loader, val_loader, test_loader = get_train_val_loaders()
-    if tr_loader:
-        print(f"Train loader created with batch size {tr_loader.batch_size}")
-    else:
-        print("No dataloader created (data directory might be empty).")
+    # Test
+    # ダミーファイルを作らないとテスト落ちるので、ここではインポートのみ確認
+    print("dataset.py module loaded.")

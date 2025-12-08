@@ -1,76 +1,164 @@
 import torch
 import torch.nn as nn
-from torchvision import models
 from typing import Optional
 import src.config as config
 
-class SimpleResNet(nn.Module):
-    """
-    製品外観検査用ResNetモデル。
-    
-    標準のResNet18を使用し、224x224の入力サイズに対応する。
-    転移学習の恩恵を最大化するため、アーキテクチャは変更せずそのまま利用する。
-    """
-    
-    def __init__(self, num_classes: int = config.NUM_CLASSES, pretrained: bool = True):
-        """
-        初期化メソッド。
+class EncoderBlock(nn.Module):
+    def __init__(self, in_channels: int, out_channels: int, kernel_size: int = 3, stride: int = 2, padding: int = 1):
+        super().__init__()
+        self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=padding, bias=False)
+        self.bn = nn.BatchNorm2d(out_channels)
+        self.leaky_relu = nn.LeakyReLU(0.2, inplace=True)
         
-        Args:
-            num_classes (int): 出力クラス数 (デフォルト: 2)
-            pretrained (bool): ImageNetの事前学習済み重みを使用するかどうか (デフォルト: True)
-        """
-        super(SimpleResNet, self).__init__()
+    def forward(self, x):
+        return self.leaky_relu(self.bn(self.conv(x)))
+
+class DecoderBlock(nn.Module):
+    def __init__(self, in_channels: int, out_channels: int, kernel_size: int = 3, stride: int = 2, padding: int = 1, output_padding: int = 1):
+        super().__init__()
+        self.conv_t = nn.ConvTranspose2d(in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=padding, output_padding=output_padding, bias=False)
+        self.bn = nn.BatchNorm2d(out_channels)
+        self.leaky_relu = nn.LeakyReLU(0.2, inplace=True)
         
-        # ResNet18モデルのロード
-        if pretrained:
-            self.model = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
-        else:
-            self.model = models.resnet18(weights=None)
+    def forward(self, x):
+        return self.leaky_relu(self.bn(self.conv_t(x)))
+
+class ConvolutionalAutoEncoder(nn.Module):
+    """
+    軽量CAE (Convolutional AutoEncoder)
+    M1 Mac上での学習効率を考慮し、パラメータ数を抑えつつ特徴抽出能力を維持する設計。
+    Input: (B, 1, 256, 256) -> Output: (B, 1, 256, 256)
+    """
+    
+    def __init__(self):
+        super(ConvolutionalAutoEncoder, self).__init__()
+        
+        # =======================
+        # Encoder
+        # =======================
+        # Input: (B, 1, 256, 256)
+        self.enc1 = EncoderBlock(1, 32)       # -> (32, 128, 128)
+        self.enc2 = EncoderBlock(32, 64)      # -> (64, 64, 64)
+        self.enc3 = EncoderBlock(64, 128)     # -> (128, 32, 32)
+        self.enc4 = EncoderBlock(128, 256)    # -> (256, 16, 16)
+        
+        # Bottleneck: 空間解像度維持 (16x16), チャンネル圧縮 (256->64)
+        self.bottleneck = nn.Sequential(
+            nn.Conv2d(256, 64, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.BatchNorm2d(64),
+            nn.LeakyReLU(0.2, inplace=True)
+        ) # -> (64, 16, 16)
+        
+        # =======================
+        # Decoder
+        # =======================
+        # Reverse Bottleneck: (64 -> 256)
+        self.dec_bottleneck = nn.Sequential(
+            nn.ConvTranspose2d(64, 256, kernel_size=3, stride=1, padding=1, bias=False),
+            nn.BatchNorm2d(256),
+            nn.LeakyReLU(0.2, inplace=True)
+        ) # -> (256, 16, 16)
+        
+        # Upsampling
+        # NOTE: output_padding=1 ensures doubling when k=3, s=2, p=1
+        self.dec4 = DecoderBlock(256, 128)    # -> (128, 32, 32)
+        self.dec3 = DecoderBlock(128, 64)     # -> (64, 64, 64)
+        self.dec2 = DecoderBlock(64, 32)      # -> (32, 128, 128)
+        
+        # Final Output Layer
+        self.final_conv = nn.ConvTranspose2d(32, 1, kernel_size=3, stride=2, padding=1, output_padding=1, bias=True)
+        self.sigmoid = nn.Sigmoid()
+        # -> (1, 256, 256)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # Encoder
+        x = self.enc1(x)
+        x = self.enc2(x)
+        x = self.enc3(x)
+        x = self.enc4(x)
+        x = self.bottleneck(x)
+        
+        # Decoder
+        x = self.dec_bottleneck(x)
+        x = self.dec4(x)
+        x = self.dec3(x)
+        x = self.dec2(x)
+        x = self.final_conv(x)
+        x = self.sigmoid(x)
+        
+        return x
+
+class SimpleCNN(nn.Module):
+    """
+    Phase 1 (分類) 用の単純なCNNモデル。
+    パッチ画像 (256x256) を入力とし、良品(0)/不良品(1)の2クラス分類を行う。
+    Input: (B, 1, 256, 256) -> Output: (B, 2)
+    """
+    def __init__(self, num_classes: int = 2):
+        super(SimpleCNN, self).__init__()
+        
+        # Feature Extractor
+        self.features = nn.Sequential(
+            # Block 1
+            nn.Conv2d(1, 32, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(32),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2, 2), # -> 128x128
             
-        # 最終の全結合層 (fc) をクラス数に合わせて置換
-        in_features = self.model.fc.in_features
-        self.model.fc = nn.Linear(in_features, num_classes)
+            # Block 2
+            nn.Conv2d(32, 64, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2, 2), # -> 64x64
+            
+            # Block 3
+            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2, 2), # -> 32x32
+            
+            # Block 4
+            nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(256),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2, 2), # -> 16x16
+            
+            # Global Average Pooling
+            nn.AdaptiveAvgPool2d((1, 1)) # -> (B, 256, 1, 1)
+        )
+        
+        # Classifier
+        self.classifier = nn.Linear(256, num_classes)
         
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        順伝播処理。
-        
-        Args:
-            x (torch.Tensor): 入力画像テンソル (Batch, 3, 224, 224)
-            
-        Returns:
-            torch.Tensor: ロジット出力 (Batch, num_classes)
-        """
-        return self.model(x)
+        x = self.features(x)
+        x = x.view(x.size(0), -1) # Flatten
+        x = self.classifier(x)
+        return x
 
-def get_model(device: str = "cpu") -> nn.Module:
+def get_model(device: str = "cpu", phase2: bool = True) -> nn.Module:
     """
     モデルインスタンスを生成して指定デバイスに転送するヘルパー関数。
-    
     Args:
-        device (str): 利用するデバイス ('cpu', 'cuda', 'mps' 等)
-            
-    Returns:
-        nn.Module: 初期化されたモデル
+        device (str): 'cpu', 'cuda', 'mps'
+        phase2 (bool): TrueならAE (Phase 2), FalseならClassifier (Phase 1)
     """
-    model = SimpleResNet(num_classes=config.NUM_CLASSES, pretrained=True)
+    if phase2:
+        model = ConvolutionalAutoEncoder()
+    else:
+        model = SimpleCNN(num_classes=2)
+        
     model.to(device)
     return model
 
 if __name__ == "__main__":
-    # モデルの簡易テスト
-    print("Testing model module...")
-    
-    # ダミー入力 (Batch=2, Channels=3, H=224, W=224)
-    dummy_input = torch.randn(2, 3, 224, 224)
-    
-    model = SimpleResNet()
+    # Test shape
+    print("Testing ConvolutionalAutoEncoder...")
+    model = ConvolutionalAutoEncoder()
+    dummy_input = torch.randn(2, 1, 256, 256)
     output = model(dummy_input)
+    print(f"Input shape : {dummy_input.shape}")
+    print(f"Output shape: {output.shape}")
     
-    print(f"Input shape: {dummy_input.shape}")
-    print(f"Output shape: {output.shape}") # 期待値: [2, 2]
-    
-    expected_shape = (2, 2)
-    assert output.shape == expected_shape, f"Output shape mismatch. Expected {expected_shape}, got {output.shape}"
-    print("Model test passed successfully.")
+    assert output.shape == dummy_input.shape
+    print("Shape mismatch test passed!")
