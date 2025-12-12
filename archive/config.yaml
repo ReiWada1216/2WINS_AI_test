@@ -1,0 +1,151 @@
+# anomalib==2.2.0
+seed_everything: true
+trainer:
+  accelerator: mps
+  strategy: auto
+  devices: 1
+  num_nodes: 1
+  precision: 32-true
+  logger:
+  - class_path: lightning.pytorch.loggers.WandbLogger
+    init_args:
+      name: efficientad_tiling_m1
+      save_dir: .
+      version: null
+      offline: false
+      dir: null
+      id: null
+      anonymous: null
+      project: 2wins_anomalib
+      log_model: false
+      experiment: null
+      prefix: ''
+      checkpoint_name: null
+      add_file_policy: mutable
+      entity: null
+      notes: null
+      tags: null
+      config: null
+      config_exclude_keys: null
+      config_include_keys: null
+      allow_val_change: null
+      group: null
+      job_type: null
+      mode: null
+      force: null
+      reinit: null
+      resume: null
+      resume_from: null
+      fork_from: null
+      save_code: null
+      tensorboard: null
+      sync_tensorboard: null
+      monitor_gym: null
+      settings: null
+  callbacks:
+  - class_path: lightning.pytorch.callbacks.EarlyStopping
+    init_args:
+      monitor: val_loss
+      patience: 10
+      mode: min
+  - class_path: lightning.pytorch.callbacks.ModelCheckpoint
+    init_args:
+      dirpath: ./weights/efficient_ad
+      filename: best_model
+      monitor: val_loss
+      verbose: false
+      save_last: true
+      save_top_k: 1
+      save_on_exception: false
+      save_weights_only: false
+      mode: min
+      auto_insert_metric_name: false
+      every_n_train_steps: null
+      train_time_interval: null
+      every_n_epochs: null
+      save_on_train_epoch_end: null
+      enable_version_counter: true
+  fast_dev_run: false
+  max_epochs: 100
+  min_epochs: null
+  max_steps: -1
+  min_steps: null
+  max_time: null
+  limit_train_batches: null
+  limit_val_batches: null
+  limit_test_batches: null
+  limit_predict_batches: null
+  overfit_batches: 0.0
+  val_check_interval: null
+  check_val_every_n_epoch: 1
+  num_sanity_val_steps: null
+  log_every_n_steps: 10
+  enable_checkpointing: null
+  enable_progress_bar: null
+  enable_model_summary: null
+  accumulate_grad_batches: 1
+  gradient_clip_val: null
+  gradient_clip_algorithm: null
+  deterministic: null
+  benchmark: null
+  inference_mode: true
+  use_distributed_sampler: true
+  profiler: null
+  detect_anomaly: false
+  barebones: false
+  plugins: null
+  sync_batchnorm: false
+  reload_dataloaders_every_n_epochs: 0
+  enable_autolog_hparams: true
+  model_registry: null
+optimizer: null
+lr_scheduler: null
+model:
+  class_path: anomalib.models.EfficientAd
+  init_args:
+    imagenet_dir: datasets/imagenette
+    teacher_out_channels: 384
+    model_size: small
+    lr: 0.0001
+    weight_decay: 1.0e-05
+    padding: false
+    pad_maps: true
+    pre_processor: true
+    post_processor: true
+    evaluator: true
+    visualizer: true
+data:
+  class_path: anomalib.data.Folder
+  init_args:
+    name: toyota_emblem_efficientad
+    tiling:
+      apply: true
+      tile_size: 256
+      stride: 128
+      remove_border_count: 0
+      use_random_tiling: false
+      random_tile_count: 16
+    normal_dir: good
+    root: ./data/processed
+    abnormal_dir: bad
+    normal_test_dir: null
+    mask_dir: null
+    normal_split_ratio: 0.2
+    extensions:
+    - .png
+    train_batch_size: 8
+    eval_batch_size: 8
+    num_workers: 2
+    train_augmentations: null
+    val_augmentations: null
+    test_augmentations: null
+    augmentations: null
+    test_split_mode: from_dir
+    test_split_ratio: 0.2
+    val_split_mode: from_test
+    val_split_ratio: 0.5
+    seed: 42
+logging:
+  log_graph: false
+default_root_dir: results
+ckpt_path: null

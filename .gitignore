@@ -3,13 +3,14 @@ __pycache__/
 *.pyc
 .ipynb_checkpoints/
 
-# データセット 
-data/
-*.zip
+# データセット
+dataset/
+*data.zip
 
 # 学習済み重み 
-weights/
-*.pth
+# 学習済み重み (Saved in weights/)
+# weights/  <- allowed
+# *.pth     <- allowed
 
 # 環境設定
 .env
@@ -20,3 +21,18 @@ wandb/
 *.wandb
 .wandb
 artifacts/wandb/
+
+# OS
+.DS_Store
+
+# Anomalib outputs
+results/
+datasets/
+dataset_export/
+
+# archived files (Allow archive, but ignore large contents)
+archive/datasets/
+archive/results/
+archive/pre_trained/
+archive/efficient_pretrained/
+archive/.venv/

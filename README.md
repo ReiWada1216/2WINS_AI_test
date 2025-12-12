@@ -1,63 +1,47 @@
-# 不良品識別AIモデル (Defect Classification Model)
+# EfficientAD Anomaly Detection Project
 
-本リポジトリは、製造現場の外観検査をAIで自動化するため、製品画像から良品/不良品を予測する二値分類モデルを開発するものである。
+このプロジェクトは、Google Colab上で **EfficientAD** を用いた異常検知モデルの実装・実験を行ったものです。
+技術面接用のポートフォリオとして、リポジトリ構成を整理しています。
 
-**【課題の焦点】**
-熟練検査員の経験に依存する不安定な目視検査を代替し、**わずかな見落としによるトラブルを防ぐ**ことを目的としている。
+## 📁 ディレクトリ構成
 
-## 評価指標 (KPI)
+プロジェクトは以下の構成で管理されています。
 
-クライアントの要件「わずかな見落としが後のトラブルにつながる」を踏まえ、以下の指標を最重要KPIに設定する。
+- **`notebooks/`**
+  - モデルの学習および推論を行うための主要な実装が含まれています。
+  - Google Colabでの実行を想定しています。
+  - 主なファイル:
+    - `colab_efficientad.ipynb`: EfficientADの学習・推論用ノートブック
+    - `colab_efficientad_training.ipynb`: トレーニング実験用
+    - `colab_phase1.ipynb`, `colab_phase2.ipynb`: 各フェーズの実装
 
-* **最重要 KPI:** **再現率 (Recall)**
-    * 不良品をどれだけ正確に不良品と判定できたかを示す指標。見逃し（偽陰性/False Negative）の最小化を目的とします。
-* **サブ KPI:** Precision, F1-Score
+- **`dataset/`**
+  - モデルの学習・評価に使用するデータセットが格納されています。
+  - `phase1_dataset`, `phase2_dataset` などが含まれます。
 
-## ⚙️ 開発環境と再現手順
+- **`weights/`**
+  - 学習済みのモデル重みファイルが保存されています。
+  - `efficientAD_rocauc_0.983.ckpt`: 高精度を達成したEfficientADのチェックポイント
+  - その他、比較実験用のバックボーンモデルなど
 
-### 必要なもの
-- Python 3.x
-- Git
-- データセット (dataset.zip)
+- **`archive/`**
+  - 開発過程で使用したローカルスクリプトや、現在は使用していない試行錯誤のファイル群です。
+  - 技術的な詳細を確認したい場合の参照用として残しています。
 
-### 環境構築
-1. リポジトリをクローンし、ディレクトリへ移動します。
-```bash
-git clone https://github.com/ReiWada1216/2WINS_AI_test
-cd 2WINS_AI_test
-```
+## 🚀 実行方法
 
-2. Python仮想環境を構築し、依存関係をインストール。
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-```
+本プロジェクトの実装は **Google Colab** 上で動作することを前提としています。
+`notebooks/` ディレクトリ内の `.ipynb` ファイルをGoogle Colabにアップロードし、ランタイムをGPUに設定して実行してください。
 
-3. 依存関係をインストール。
-```bash
-pip install -r requirements.txt
-```
+## 🧠 モデルと成果
 
-4. データセットを解凍。
-```bash
-unzip dataset.zip
-```
+- **Model**: EfficientAD
+- **Task**: 異常検知 (Anomaly Detection)
+- **Performance**:
+  - ROC AUC: 0.983 (Best checkpoint)
+  - 非常に高い精度で異常箇所を特定可能です。
 
-5. 学習の実行。
-```bash
-python src/main.py
-```
+## 📝 補足
 
-## 📂 プロジェクト構造
-- `src/`: データローダー、モデル、学習ロジックなどの共通コード
-- `notebooks/`: 実験の流れと評価を実行するノートブック
-- `weights/`: 学習済み重みの保存場所 (Git管理外)
-- `results/`: 混同行列、Grad-CAM画像などの可視化結果
-
-## 🔗 成果物と外部リンク
-
-| 提出物 | ファイル/リンク | 備考 |
-| :--- | :--- | :--- |
-| **報告レポート** | `[Google Drive 共有リンク貼る]` | KPI、試した技術、考察をまとめた最終報告書です。 |
-| **学習済み重み** | `[Google Drive 共有リンク貼る]` | 容量制限のため、重みファイルは別途アップロードしています。 |
-| **可視化結果** | `results/figures/` 以下に格納 | 混同行列、学習曲線、Grad-CAMの例などを確認できます。 |
+- コード内のコメントや説明は、実験の経緯を含めて記述されています。
+- ローカル環境での再現よりも、Colab環境での再現性を重視しています。
